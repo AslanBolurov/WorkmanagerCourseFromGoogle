@@ -1,9 +1,12 @@
 package com.example.background
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
+import androidx.work.WorkInfo
 import com.example.background.databinding.ActivityBlurBinding
 
 class BlurActivity : AppCompatActivity() {
@@ -24,6 +27,34 @@ class BlurActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.goButton.setOnClickListener { viewModel.applyBlur(blurLevel) }
+
+        viewModel.outputWorkInfos.observe(this){
+            if (it.isNullOrEmpty()){
+                return@observe
+            }
+            val workInfo=it[0]
+            if (workInfo.state.isFinished){
+                showWorkFinished()
+
+                val outputImageUri=workInfo.outputData.getString(KEY_IMAGE_URI)
+                viewModel.setOutputUri(outputImageUri)
+                binding.seeFileButton.visibility=View.VISIBLE
+
+            }else{
+                showWorkInProgress()
+            }
+        }
+        binding.seeFileButton.setOnClickListener {
+            viewModel.outputUri?.let {
+                val intentForActionView=Intent(Intent.ACTION_VIEW,it)
+                intentForActionView.resolveActivity(packageManager)?.run {
+                    startActivity(intentForActionView)
+                }
+            }
+        }
+        binding.cancelButton.setOnClickListener {
+            viewModel.cancelWork()
+        }
     }
 
     /**
