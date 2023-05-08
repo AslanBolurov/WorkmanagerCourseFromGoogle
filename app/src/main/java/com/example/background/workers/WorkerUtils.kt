@@ -1,16 +1,18 @@
-
 @file:JvmName("WorkerUtils")
 
 package com.example.background.workers
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.annotation.WorkerThread
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.renderscript.Allocation
@@ -56,21 +58,28 @@ fun makeStatusNotification(message: String, context: Context) {
 
         // Add the channel
         val notificationManager =
-                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager?
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager?
 
         notificationManager?.createNotificationChannel(channel)
     }
 
     // Create the notification
     val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(NOTIFICATION_TITLE)
-            .setContentText(message)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setVibrate(LongArray(0))
+        .setSmallIcon(R.drawable.ic_launcher_foreground)
+        .setContentTitle(NOTIFICATION_TITLE)
+        .setContentText(message)
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
+        .setVibrate(LongArray(0))
 
     // Show the notification
-    NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build())
+    if (ActivityCompat.checkSelfPermission(
+            context,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+    ) {
+
+        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build())
+    }
 }
 
 /**
@@ -98,7 +107,8 @@ fun blurBitmap(bitmap: Bitmap, applicationContext: Context): Bitmap {
 
         // Create the output bitmap
         val output = Bitmap.createBitmap(
-                bitmap.width, bitmap.height, bitmap.config)
+            bitmap.width, bitmap.height, bitmap.config
+        )
 
         // Blur the image
         rsContext = RenderScript.create(applicationContext, RenderScript.ContextType.DEBUG)
